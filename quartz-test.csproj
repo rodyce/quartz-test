@@ -7,14 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CrystalQuartz.AspNetCore" Version="6.8.1" />
     <PackageReference Include="dotenv.net" Version="1.0.6" />
-    <PackageReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.2.6" />
     <PackageReference Include="MySql.Data" Version="8.0.16" />
     <PackageReference Include="Quartz" Version="3.0.7" />
+    <PackageReference Include="Quartz.Plugins.RecentHistory" Version="1.0.3" />
     <PackageReference Include="Quartz.Serialization.Json" Version="3.0.7" />
-    <PackageReference Include="Quartzmin" Version="1.0.3" />
-    <PackageReference Include="Quartzmin.SelfHost" Version="1.0.3" />
   </ItemGroup>
 
 </Project>

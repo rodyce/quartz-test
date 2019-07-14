@@ -1,32 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
-using System.Threading.Tasks;
+using CrystalQuartz.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using Quartz.Impl;
-using Quartzmin;
+
 
 namespace quartz_test
 {
     public class Startup
     {
-        private readonly IConfiguration _configuration;
-
         public Startup(IConfiguration configuration)
         {
-            _configuration = configuration;
+            Configuration = configuration;
         }
+
+        public IConfiguration Configuration { get; }
+
         // This method gets called by the runtime. Use this method to add services to the container.
-        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddQuartzmin();
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -34,26 +32,35 @@ namespace quartz_test
         {
             if (env.IsDevelopment())
             {
+                app.UseBrowserLink();
                 app.UseDeveloperExceptionPage();
             }
-
-            app.UseQuartzmin(new QuartzminOptions() {
-                Scheduler = CreateQuartzScheduler()
-            });
-
-            app.Run(async (context) =>
+            else
             {
-                await context.Response.WriteAsync("Hello World!");
+                app.UseExceptionHandler("/Home/Error");
+            }
+
+            app.UseStaticFiles();
+
+            var scheduler = CreateScheduler();
+            app.UseCrystalQuartz(() => scheduler);
+
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=Home}/{action=Index}/{id?}");
             });
         }
+
 
         private static readonly IEnumerable<String> CustomEnvVars = new HashSet<String> {
             "DB_HOST", "DB_USER", "DB_PASS", "DB_DATABASE", "DB_POOL_SIZE"
         };
 
-        private IScheduler CreateQuartzScheduler()
+        private IScheduler CreateScheduler()
         {
-            var quartzConfigSection = _configuration.GetSection("quartz");
+            var quartzConfigSection = Configuration.GetSection("quartz");
             var schedulerProps = new NameValueCollection();
 
             foreach (var setting in quartzConfigSection.GetChildren())

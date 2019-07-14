@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿
+using dotenv.net;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
-using dotenv.net;
+using System.IO;
 
 namespace quartz_test
 {
@@ -17,16 +12,17 @@ namespace quartz_test
         public static void Main(string[] args)
         {
             DotEnv.Config();
-            CreateWebHostBuilder(args).Build().Run();
+            BuildWebHost(args).Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+        public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     config.SetBasePath(Directory.GetCurrentDirectory());
-                    config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                    //config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                 })
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+                .Build();
     }
 }
