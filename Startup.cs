@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using CrystalQuartz.AspNetCore;
+using CrystalQuartz.Application;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using Quartz.Impl;
-
+using quartz_test.Util;
 
 namespace quartz_test
 {
@@ -43,7 +44,16 @@ namespace quartz_test
             app.UseStaticFiles();
 
             var scheduler = CreateScheduler();
-            app.UseCrystalQuartz(() => scheduler);
+            app.UseCrystalQuartz(
+                () => scheduler,
+                new CrystalQuartzOptions
+                {
+                    AllowedJobTypes = new[]
+                    {
+                        typeof(GenericScheduler.Jobs.CmdLineJob)
+                    }
+                });
+            scheduler.Start();
 
             app.UseMvc(routes =>
             {
@@ -65,23 +75,8 @@ namespace quartz_test
 
             foreach (var setting in quartzConfigSection.GetChildren())
             {
-                if (setting.Key.EndsWith(".connectionString"))
-                {
-                    var connectionString = setting.Value;
-                    foreach (var envVar in CustomEnvVars)
-                    {
-                        var replaceStr = string.Format("${{{0}}}", envVar);
-                        if (connectionString.Contains(replaceStr))
-                        {
-                            connectionString = connectionString.Replace(replaceStr, Environment.GetEnvironmentVariable(envVar));
-                        }
-                    }
-                    schedulerProps.Add(setting.Key, connectionString);
-                }
-                else
-                {
-                    schedulerProps.Add(setting.Key, setting.Value);
-                }
+                var settingValue = setting.Value.ReplaceEnvVariables();
+                schedulerProps.Add(setting.Key, settingValue);
             }
             var customSchedulerFactory = new StdSchedulerFactory(schedulerProps);
 
