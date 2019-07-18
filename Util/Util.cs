@@ -17,5 +17,10 @@ namespace quartz_test.Util
             }
             return template;
         }
+
+        public static string ReplaceEnvVariablesA(string template)
+        {
+            return template.ReplaceEnvVariables();
+        }
     }
 }

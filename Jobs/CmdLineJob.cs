@@ -10,8 +10,9 @@ namespace GenericScheduler.Jobs
     [PersistJobDataAfterExecution]
     public class CmdLineJob : IJob
     {
-        const string CommandJobDataMapKey = "Command";
-        const string CommandArgsJobDataMapKey = "Args";
+        public const string ExecutableFileJobDataMapKey = "ExecutableFile";
+        public const string ArgumentsJobDataMapKey = "Arguments";
+        public const string WorkingDirectoryJobDataMapKey = "WorkingDirectory";
         const string ScheduledFireTimeUtcFormat = "{{.ScheduledFireTimeUtc}}";
         const string FireTimeUtcFormat = "{{.FireTimeUtc}}";
 
@@ -23,8 +24,9 @@ namespace GenericScheduler.Jobs
                 {
                     var commandToExec = ParseCommand(context);
                     var commandArgs = ParseCommandArgs(context);
+                    var commandWorkingDir = ParseWorkingDirectory(context);
 
-                    return await RunProcessAsync(fileName: commandToExec, args: commandArgs);
+                    return await RunProcessAsync(fileName: commandToExec, args: commandArgs, workingDir: commandWorkingDir);
                 });
                 Console.WriteLine($"Process executed. Exit code: {exitCode}");
                 if (exitCode != 0)
@@ -53,13 +55,13 @@ namespace GenericScheduler.Jobs
         private string ParseCommand(IJobExecutionContext context)
         {
             var jobDataMap = context.JobDetail.JobDataMap;
-            if (!jobDataMap.ContainsKey(CommandJobDataMapKey))
+            if (!jobDataMap.ContainsKey(ExecutableFileJobDataMapKey))
             {
                 throw new JobExecutionException(
-                    cause: new ArgumentException($"The {CommandJobDataMapKey} job argument is not specified"),
+                    cause: new ArgumentException($"The {ExecutableFileJobDataMapKey} job argument is not specified"),
                     refireImmediately: false);
             }
-            var commandToExec = jobDataMap[CommandJobDataMapKey]
+            var commandToExec = jobDataMap[ExecutableFileJobDataMapKey]
                 .ToString()
                 .ReplaceEnvVariables();
 
@@ -69,11 +71,22 @@ namespace GenericScheduler.Jobs
         private string ParseCommandArgs(IJobExecutionContext context)
         {
             var jobDataMap = context.JobDetail.JobDataMap;
-            var commandArgsTemplate = jobDataMap.ContainsKey(CommandArgsJobDataMapKey) ?
-                jobDataMap[CommandArgsJobDataMapKey].ToString() : string.Empty;
+            var commandArgsTemplate = jobDataMap.ContainsKey(ArgumentsJobDataMapKey) ?
+                jobDataMap[ArgumentsJobDataMapKey].ToString() : string.Empty;
             var commandArgs = commandArgsTemplate
                 .Replace(ScheduledFireTimeUtcFormat, GetJobScheduledFireTimeUtc(context), StringComparison.InvariantCultureIgnoreCase)
                 .Replace(FireTimeUtcFormat, GetJobFireTimeUtc(context), StringComparison.InvariantCultureIgnoreCase)
+                .ReplaceEnvVariables();
+
+            return commandArgs;
+        }
+
+        private string ParseWorkingDirectory(IJobExecutionContext context)
+        {
+            var jobDataMap = context.JobDetail.JobDataMap;
+            var workingDirectoryTemplate = jobDataMap.ContainsKey(WorkingDirectoryJobDataMapKey) ?
+                jobDataMap[WorkingDirectoryJobDataMapKey].ToString() : string.Empty;
+            var commandArgs = workingDirectoryTemplate
                 .ReplaceEnvVariables();
 
             return commandArgs;
@@ -91,8 +104,12 @@ namespace GenericScheduler.Jobs
             return context.FireTimeUtc.ToString("o");
         }
 
-        private static async Task<int> RunProcessAsync(string fileName, string args)
+        private static async Task<int> RunProcessAsync(string fileName, string args, string workingDir)
         {
+            if (workingDir == null || workingDir.Trim() == string.Empty)
+            {
+                workingDir = Path.GetDirectoryName(fileName);
+            }
             using (var process = new Process
             {
                 StartInfo =
@@ -100,7 +117,7 @@ namespace GenericScheduler.Jobs
                     FileName = fileName, Arguments = args,
                     UseShellExecute = false, CreateNoWindow = true,
                     RedirectStandardOutput = true, RedirectStandardError = true,
-                    WorkingDirectory = Path.GetDirectoryName(fileName)
+                    WorkingDirectory = workingDir
                 },
                 EnableRaisingEvents = true
             })

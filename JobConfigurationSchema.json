@@ -1,0 +1,108 @@
+{
+  "definitions": {
+      "CronScheduleType": {
+          "type": "object",
+          "properties": {
+              "Type": {
+                  "type": "string",
+                  "enum": ["Cron"]
+              },
+              "Settings": {
+                  "type": "object",
+                  "properties": {
+                      "Expr": {
+                          "type": "string"
+                      }
+                  },
+                  "required": ["Expr"]
+              }
+          }
+      },
+      "SimpleScheduleType": {
+          "type": "object",
+          "properties": {
+              "Type": {
+                  "type": "string",
+                  "enum": ["Simple"]
+              },
+              "Settings": {
+                  "type": "object",
+                  "properties": {
+                      "RepeatCount": { "type": "integer" },
+                      "RepeatForever": { "type": "boolean" },
+                      "RepeatEvery": { "type": "integer" },
+                      "RepeatUnit": {
+                          "type": "string",
+                          "enum": [
+                              "millis",
+                              "sec",
+                              "min",
+                              "hour",
+                              "day"
+                          ]
+                      }
+                  },
+                  "required": ["RepeatForever", "RepeatEvery", "RepeatUnit"]
+              }
+          }
+      },
+
+      "ProcessExecJobType": {
+          "type": "object",
+          "properties": {
+              "Type": {
+                  "type": "string",
+                  "enum": ["ProcessExec"]
+              },
+              "Settings": {
+                  "type": "object",
+                  "properties": {
+                      "ExecutableFile": {
+                          "type": "string"
+                      },
+                      "Arguments": {
+                          "type": "string"
+                      },
+                      "WorkingDirectory": {
+                          "type": "string"
+                      }
+                  },
+                  "required": [
+                      "ExecutableFile"
+                  ]
+              },
+              "Schedule": {
+                  "type": "array",
+                  "items": {
+                      "anyOf": [
+                          {
+                              "$ref": "#/definitions/CronScheduleType"
+                          },
+                          {
+                              "$ref": "#/definitions/SimpleScheduleType"
+                          }
+                      ]
+                  }
+              }
+          }
+      }
+  },
+
+  "type": "object",
+
+  "properties": {
+      "TaskDefinitions": {
+          "type": "object",
+          "patternProperties": {
+              "^.*$": {
+                  "type": "object",
+                  "patternProperties": {
+                      "^.*$": {
+                          "$ref": "#/definitions/ProcessExecJobType"
+                      }
+                  }
+              }
+          }
+      }
+  }
+}

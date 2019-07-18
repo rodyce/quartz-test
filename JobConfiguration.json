@@ -1,0 +1,40 @@
+{
+  "TaskDefinitions": {
+    "Rewards": {
+      "BalanceSnapshot": {
+        "Type": "ProcessExec",
+        "Settings": {
+          "ExecutableFile": "{{.Env.RewardsBalanceSnapshotExecutableFile}}",
+          "xArguments": "{{.Env.RewardsBalanceSnapshotArguments}}",
+          "xWorkingDirectory": "{{.Env.RewardsBalanceSnapshotWorkingDirectory}}"
+        },
+        "Schedule": [
+          {
+            "Type": "Cron",
+            "Settings": {
+              "Expr": "0 0 0 0"
+            }
+          }
+        ]
+      },
+      "StakeCount": {
+        "Type": "ProcessExec",
+        "Settings": {
+          "ExecutableFile": "{{.Env.RewardsStakeCountExecutableFile}}",
+          "Arguments": "{{.Env.RewardsStakeCountArguments}}",
+          "WorkingDirectory": "{{.Env.RewardsStakeCountWorkingDirectory}}"
+        },
+        "Schedule": [
+          {
+            "Type": "simple",
+            "Settings": {
+              "RepeatForever": false,
+              "RepeatEvery": 10,
+              "RepeatUnit": "sec"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

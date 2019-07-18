@@ -10,6 +10,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using Quartz.Impl;
 using quartz_test.Util;
+using Newtonsoft.Json;
+using System.IO;
+using GenericScheduler.Jobs;
+using System.Threading.Tasks;
+using quartz_test.Config;
 
 namespace quartz_test
 {
@@ -53,20 +58,29 @@ namespace quartz_test
                         typeof(GenericScheduler.Jobs.CmdLineJob)
                     }
                 });
-            scheduler.Start();
-
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+
+            ConfigureJobs(scheduler).ContinueWith((t1) =>
+            {
+                if (t1.IsCompletedSuccessfully)
+                {
+                    scheduler.Start();
+                }
+                else
+                {
+                    if (t1.Exception != null)
+                    {
+                        Console.WriteLine(t1.Exception.Message);
+                        throw t1.Exception;
+                    }
+                }
+            });
         }
-
-
-        private static readonly IEnumerable<String> CustomEnvVars = new HashSet<String> {
-            "DB_HOST", "DB_USER", "DB_PASS", "DB_DATABASE", "DB_POOL_SIZE"
-        };
 
         private IScheduler CreateScheduler()
         {
@@ -81,6 +95,27 @@ namespace quartz_test
             var customSchedulerFactory = new StdSchedulerFactory(schedulerProps);
 
             return customSchedulerFactory.GetScheduler().Result;
+        }
+
+        private async Task ConfigureJobs(IScheduler scheduler)
+        {
+            var quartzConfigSection = Configuration.GetSection("GenericScheduler");
+            var configFile = string.Empty;
+            foreach (var setting in quartzConfigSection.GetChildren())
+            {
+                switch (setting.Key)
+                {
+                    case "ConfigFile":
+                    configFile = setting.Value;
+                    break;
+                }
+            }
+
+            if (configFile == string.Empty) {
+                return;
+            }
+
+            TaskConfigurer.ConfigureTask(scheduler, configFile);
         }
     }
 }
